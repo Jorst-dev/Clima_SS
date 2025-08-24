@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 import requests
 import os
 from datetime import datetime
@@ -54,6 +54,41 @@ def obtener_icono_clima(descripcion):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/buscar_clima', methods=['POST'])
+def buscar_clima():
+    ciudad = request.form.get('ciudad', '').strip()
+    
+    if not ciudad:
+        return jsonify({'error': 'Por favor ingresa el nombre de una ciudad'})
+    
+    clima = clima_actual(ciudad)
+    
+    if clima is None:
+        return jsonify({'error': 'No se pudo obtener información del clima. Verifica tu API key o intenta con otra ciudad.'})
+    
+    if clima.get("cod") != 200:
+        return jsonify({'error': f'Ciudad no encontrada: {clima.get("message", "Error desconocido")}'})
+    
+    # Procesar datos del clima
+    datos_clima = {
+        'ciudad': clima['name'],
+        'pais': clima['sys']['country'],
+        'descripcion': clima['weather'][0]['description'].title(),
+        'temperatura': round(clima['main']['temp']),
+        'sensacion_termica': round(clima['main']['feels_like']),
+        'humedad': clima['main']['humidity'],
+        'presion': clima['main']['pressure'],
+        'viento_velocidad': clima['wind'].get('speed', 0),
+        'viento_direccion': clima['wind'].get('deg', 0),
+        'visibilidad': round(clima.get('visibility', 0) / 1000, 1) if clima.get('visibility') else 0,
+        'icono': obtener_icono_clima(clima['weather'][0]['description']),
+        'fecha': datetime.now().strftime('%d/%m/%Y %H:%M'),
+        'temp_min': round(clima['main']['temp_min']),
+        'temp_max': round(clima['main']['temp_max'])
+    }
+    
+    return jsonify(datos_clima)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

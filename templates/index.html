@@ -2,26 +2,213 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Clima por Ciudad</title>
-    <!-- Bootstrap para estilos -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Iconos de Bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌤 Clima Actual - Consulta del Tiempo</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
 </head>
-<body class="bg-light text-center p-5">
-
-    <div class="container">
-        <h1 class="mb-4">🌤️ Consulta el Clima</h1>
-        <p>Esta es la primera parte del proyecto. Aquí cargamos la página con Flask.</p>
-
-        <!-- Campo de búsqueda (todavía no funciona, será en la segunda parte) -->
-        <form>
-            <div class="mb-3">
-                <input type="text" class="form-control text-center" placeholder="Escribe una ciudad" disabled>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <!-- Título -->
+                <div class="text-center mb-5">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="bi bi-cloud-sun-fill me-3"></i>
+                        Clima Actual
+                    </h1>
+                    <p class="lead text-white-50">Consulta el tiempo en cualquier ciudad del mundo</p>
+                </div>
+                
+                <!-- Formulario de búsqueda -->
+                <div class="search-container mb-4">
+                    <form id="weatherForm">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control form-control-lg" 
+                                       id="ciudad" name="ciudad" 
+                                       placeholder="Ingresa el nombre de la ciudad..." 
+                                       required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary btn-search btn-lg w-100">
+                                    <i class="bi bi-search me-2"></i>Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Loading -->
+                    <div class="loading text-center mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Consultando el clima...</p>
+                    </div>
+                    
+                    <!-- Mensaje de error -->
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+                </div>
+                
+                <!-- Tarjeta del clima -->
+                <div id="weatherCard" class="weather-card p-4" style="display: none;">
+                    <!-- Información de la ciudad -->
+                    <div class="city-info text-center">
+                        <h2 id="cityName" class="h3 mb-2"></h2>
+                        <p id="cityCountry" class="mb-0 opacity-75"></p>
+                        <small id="currentDate" class="opacity-75"></small>
+                    </div>
+                    
+                    <!-- Clima principal -->
+                    <div class="text-center py-4">
+                        <div class="weather-icon mb-3">
+                            <i id="weatherIcon" class="bi"></i>
+                        </div>
+                        <div class="temperature mb-2">
+                            <span id="temperature"></span>°C
+                        </div>
+                        <h4 id="weatherDescription" class="text-muted mb-3"></h4>
+                        
+                        <!-- Rango de temperaturas -->
+                        <div class="temperature-range">
+                            <div class="temp-min">
+                                <i class="bi bi-thermometer-half text-primary"></i>
+                                <div class="fw-bold">Mín</div>
+                                <span id="tempMin"></span>°C
+                            </div>
+                            <div class="temp-max">
+                                <i class="bi bi-thermometer-high text-danger"></i>
+                                <div class="fw-bold">Máx</div>
+                                <span id="tempMax"></span>°C
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalles del clima -->
+                    <div class="weather-details">
+                        <h5 class="mb-3 text-center">
+                            <i class="bi bi-info-circle me-2"></i>Detalles del Clima
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <i class="bi bi-thermometer-half detail-icon"></i>
+                                    <span>Sensación térmica: <strong id="feelsLike"></strong>°C</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="bi bi-droplet-fill detail-icon"></i>
+                                    <span>Humedad: <strong id="humidity"></strong>%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="bi bi-speedometer2 detail-icon"></i>
+                                    <span>Presión: <strong id="pressure"></strong> hPa</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <i class="bi bi-wind detail-icon"></i>
+                                    <span>Viento: <strong id="windSpeed"></strong> m/s</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="bi bi-compass detail-icon"></i>
+                                    <span>Dirección: <strong id="windDirection"></strong>°</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="bi bi-eye-fill detail-icon"></i>
+                                    <span>Visibilidad: <strong id="visibility"></strong> km</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button type="button" class="btn btn-secondary" disabled>Buscar</button>
-        </form>
+        </div>
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.getElementById('weatherForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ciudad = document.getElementById('ciudad').value.trim();
+            if (!ciudad) return;
+            
+            // Mostrar loading
+            document.querySelector('.loading').style.display = 'block';
+            document.getElementById('weatherCard').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Realizar petición
+            fetch('/buscar_clima', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `ciudad=${encodeURIComponent(ciudad)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.querySelector('.loading').style.display = 'none';
+                
+                if (data.error) {
+                    document.getElementById('errorMessage').textContent = data.error;
+                    document.getElementById('errorMessage').style.display = 'block';
+                    return;
+                }
+                
+                // Mostrar datos del clima
+                document.getElementById('cityName').textContent = data.ciudad;
+                document.getElementById('cityCountry').textContent = data.pais;
+                document.getElementById('currentDate').textContent = data.fecha;
+                document.getElementById('weatherIcon').className = `bi ${data.icono}`;
+                document.getElementById('temperature').textContent = data.temperatura;
+                document.getElementById('weatherDescription').textContent = data.descripcion;
+                document.getElementById('tempMin').textContent = data.temp_min;
+                document.getElementById('tempMax').textContent = data.temp_max;
+                document.getElementById('feelsLike').textContent = data.sensacion_termica;
+                document.getElementById('humidity').textContent = data.humedad;
+                document.getElementById('pressure').textContent = data.presion;
+                document.getElementById('windSpeed').textContent = data.viento_velocidad;
+                document.getElementById('windDirection').textContent = data.viento_direccion;
+                document.getElementById('visibility').textContent = data.visibilidad;
+                
+                // Mostrar tarjeta
+                document.getElementById('weatherCard').style.display = 'block';
+                
+                // Scroll suave a la tarjeta
+                document.getElementById('weatherCard').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            })
+            .catch(error => {
+                document.querySelector('.loading').style.display = 'none';
+                document.getElementById('errorMessage').textContent = 'Error al conectar con el servidor. Intenta nuevamente.';
+                document.getElementById('errorMessage').style.display = 'block';
+                console.error('Error:', error);
+            });
+        });
+        
+        // Permitir búsqueda con Enter
+        document.getElementById('ciudad').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('weatherForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
 </body>
 </html>
